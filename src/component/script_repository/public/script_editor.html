@@ -1,0 +1,29 @@
+<div id="script-editor" class="flex-container flexFlowColumn alignItemsCenter height100p overflowYAuto">
+  <h3 class="flex-container alignItemsCenter">스크립트 편집</h3>
+  <div id="script-name" class="script-editor-container">
+    <h4>스크립트 이름</h4>
+    <input type="text" id="script-name-input" />
+  </div>
+  <div id="script-content" class="script-editor-container">
+    <h4>스크립트 내용</h4>
+    <textarea id="script-content-textarea" placeholder="스크립트의 JavaScript 코드" rows="10"></textarea>
+  </div>
+  <div id="script-info" class="script-editor-container">
+    <h4>작성자 메모</h4>
+    <textarea
+      id="script-info-textarea"
+      placeholder="여기에 작성자가 스크립트 정보에 표시하고자 하는 내용(예: 작성자명, 버전, 주의사항 등)을 입력하세요. 간단한 마크다운 및 HTML을 지원합니다."
+      rows="5"
+    ></textarea>
+  </div>
+  <div id="script-button-content" class="script-editor-container">
+    <div class="flex-container gap10 alignItemsCenter justifyContentCenter">
+      <h4>버튼 트리거</h4>
+      <div class="menu_button interactable" id="add-button-trigger">
+        <i class="fa-solid fa-plus"></i>
+      </div>
+    </div>
+    <small>eventOnButton과 함께 사용해야 합니다.</small>
+    <div class="button-list"></div>
+  </div>
+</div>

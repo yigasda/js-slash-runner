@@ -1,1 +1,48 @@
-
+<div class="flex-container">
+  <div id="open-global-script-editor" class="menu_button menu_button_icon interactable">
+    <i class="fa-solid fa-pen-to-square"></i>
+    <small>+ 전역</small>
+  </div>
+  <div id="open-character-script-editor" class="menu_button menu_button_icon interactable">
+    <i class="fa-solid fa-address-card"></i>
+    <small>+ 캐릭터</small>
+  </div>
+  <div id="import-script" class="menu_button menu_button_icon interactable">
+    <i class="fa-solid fa-file-import"></i>
+    <small>가져오기</small>
+  </div>
+  <input multiple accept="*.json" hidden id="import-script-file" type="file" />
+  <div id="default-script" class="menu_button menu_button_icon interactable">
+    <i class="fa-solid fa-archive"></i>
+    <small>내장 라이브러리</small>
+  </div>
+</div>
+<div id="script-repository-content" class="flex-container flexFlowColumn">
+  <div class="extension-content-item">
+    <div class="flex flexFlowColumn">
+      <div class="settings-title-text">전역 스크립트 라이브러리</div>
+      <div class="settings-title-description">Tavern 모든 채팅에 적용</div>
+    </div>
+    <div class="toggle-switch">
+      <input type="checkbox" id="global-script-enable-toggle" class="toggle-input" checked />
+      <label for="global-script-enable-toggle" class="toggle-label">
+        <span class="toggle-handle"></span>
+      </label>
+    </div>
+  </div>
+  <div id="global-script-list" class="flex-container flexFlowColumn alignItemsCenter"></div>
+  <div class="divider marginTop10 marginBot10"></div>
+  <div class="extension-content-item">
+    <div class="flex flexFlowColumn">
+      <div class="settings-title-text">캐릭터 스크립트 라이브러리</div>
+      <div class="settings-title-description">현재 캐릭터 카드에 적용</div>
+    </div>
+    <div class="toggle-switch">
+      <input type="checkbox" id="character-script-enable-toggle" class="toggle-input" checked />
+      <label for="character-script-enable-toggle" class="toggle-label">
+        <span class="toggle-handle"></span>
+      </label>
+    </div>
+  </div>
+  <div id="character-script-list" class="flex-container flexFlowColumn alignItemsCenter"></div>
+</div>
