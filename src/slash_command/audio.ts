@@ -1,4 +1,7 @@
-import { get_store_by_type, handle_url_to_title } from '@/function/audio';
+import { saveSettingValue } from '@/util/extension_variables';
+
+import { chat_metadata, saveSettingsDebounced } from '@sillytavern/script';
+import { saveMetadataDebounced } from '@sillytavern/scripts/extensions';
 import { SlashCommand } from '@sillytavern/scripts/slash-commands/SlashCommand';
 import {
   ARGUMENT_TYPE,
@@ -9,201 +12,235 @@ import { commonEnumProviders, enumIcons } from '@sillytavern/scripts/slash-comma
 import { SlashCommandEnumValue, enumTypes } from '@sillytavern/scripts/slash-commands/SlashCommandEnumValue';
 import { SlashCommandParser } from '@sillytavern/scripts/slash-commands/SlashCommandParser';
 
-/** @deprecated 酒馆助手脚本已自带按钮，不再需要 /STScript */
-export function audioEnable(_args: { type: string; state?: string }): string {
-  return '';
+import {
+  list_BGMS,
+  list_ambients,
+  onAudioEnabledClick,
+  playAudio,
+  updateAudio,
+  updateAudioSelect,
+} from '../component/audio';
+
+interface AudioElement extends HTMLElement {
+  pause(): void;
 }
 
-/** @deprecated 酒馆助手脚本已自带按钮，不再需要 /STScript */
-export function audioPlay(args: { type: string; play?: string }): string {
-  if (!['bgm', 'ambient'].includes(args.type)) {
-    console.warn('WARN: Invalid arguments for /audioplaypause command');
-    return '';
-  }
+/**
+ * 오디오 재생 모드 전환
+ */
+export async function audioMode(args: { type: string; mode: string }): Promise<void> {
+  const type = args.type.toLowerCase();
+  const mode = args.mode.toLowerCase();
 
-  const type = args.type.toLowerCase() as 'bgm' | 'ambient';
-  const play = Boolean(args.play ?? 'true');
-
-  get_store_by_type(type).playing = play;
-  return '';
-}
-
-/** @deprecated 酒馆助手脚本已自带按钮，不再需要 /STScript */
-export function audioMode(args: any): string {
-  if (!['bgm', 'ambient'].includes(args.type) || !['repeat', 'random', 'single', 'stop'].includes(args.mode)) {
+  if (!['bgm', 'ambient'].includes(type) || !['repeat', 'random', 'single', 'stop'].includes(mode)) {
     console.warn('WARN: Invalid arguments for /audiomode command');
     return '';
   }
 
-  const type = args.type.toLowerCase() as 'bgm' | 'ambient';
-  const mode = args.mode.toLowerCase() as 'single' | 'repeat' | 'random' | 'stop';
+  if (type === 'bgm') {
+    saveSettingValue('audio.bgm_mode', mode);
+    const iconMap: Record<string, string> = {
+      repeat: 'fa-repeat',
+      random: 'fa-random',
+      single: 'fa-redo-alt',
+      stop: 'fa-cancel',
+    };
+    $('#audio_bgm_mode_icon').removeClass('fa-repeat fa-random fa-redo-alt fa-cancel');
+    $('#audio_bgm_mode_icon').addClass(iconMap[mode]);
+  } else if (type === 'ambient') {
+    saveSettingValue('audio.ambient_mode', mode);
+    const iconMap: Record<string, string> = {
+      repeat: 'fa-repeat',
+      random: 'fa-random',
+      single: 'fa-redo-alt',
+      stop: 'fa-cancel',
+    };
+    $('#audio_ambient_mode_icon').removeClass('fa-repeat fa-random fa-redo-alt fa-cancel');
+    $('#audio_ambient_mode_icon').addClass(iconMap[mode]);
+  }
 
-  get_store_by_type(type).mode = (
-    {
-      single: 'repeat_one',
-      repeat: 'repeat_all',
-      random: 'shuffle',
-      stop: 'play_one_and_stop',
-    } as const
-  )[mode];
+  saveSettingsDebounced();
   return '';
 }
 
-/** @deprecated 酒馆助手脚本已自带按钮，不再需要 /STScript */
-export function audioImport(args: { type: string; play?: string }, url: string): string {
-  if (!['bgm', 'ambient'].includes(args.type)) {
-    console.warn('WARN: Invalid arguments for /audioplaypause command');
+/**
+ * 플레이어 스위치 상태 전환
+ */
+export async function audioEnable(args: { type: string; state?: string }): Promise<void> {
+  const type = args.type.toLowerCase();
+  const state = (args.state || 'true').toLowerCase();
+
+  if (!type) {
+    console.warn('WARN: Missing arguments for /audioenable command');
     return '';
   }
-  const type = args.type.toLowerCase() as 'bgm' | 'ambient';
-  const play = Boolean(args.play ?? 'true');
 
-  const store = get_store_by_type(type);
+  if (type === 'bgm') {
+    if (state === 'true') {
+      $('#enable_bgm').prop('checked', true);
+      await onAudioEnabledClick('bgm');
+    } else if (state === 'false') {
+      $('#enable_bgm').prop('checked', false);
+      await onAudioEnabledClick('bgm');
+    }
+  } else if (type === 'ambient') {
+    if (state === 'true') {
+      $('#enable_ambient').prop('checked', true);
+      await onAudioEnabledClick('ambient');
+    } else if (state === 'false') {
+      $('#enable_ambient').prop('checked', false);
+      await onAudioEnabledClick('ambient');
+    }
+  }
 
-  const urls = _(url)
+  return '';
+}
+
+/**
+ * 재생/일시 정지 상태 전환
+ */
+export async function audioPlay(args: { type: string; play?: string }): Promise<void> {
+  const type = args.type.toLowerCase();
+  const play = (args.play || 'true').toLowerCase();
+
+  if (!type) {
+    console.warn('WARN: Missing arguments for /audioplaypause command');
+    return '';
+  }
+
+  if (type === 'bgm') {
+    if (play === 'true') {
+      await playAudio('bgm');
+    } else if (play === 'false') {
+      const audioElement = $('#audio_bgm')[0] as AudioElement;
+      audioElement.pause();
+    }
+  } else if (type === 'ambient') {
+    if (play === 'true') {
+      await playAudio('ambient');
+    } else if (play === 'false') {
+      const audioElement = $('#audio_ambient')[0] as AudioElement;
+      audioElement.pause();
+    }
+  }
+
+  return '';
+}
+
+/**
+ * 오디오 링크 가져오기
+ */
+export async function audioImport(args: { type: string; play?: string }, url: string): Promise<void> {
+  const type = args.type.toLowerCase();
+  const play = (args.play || 'true').toLowerCase();
+
+  if (!type || !url) {
+    console.warn('WARN: Missing arguments for /audioimport command');
+    return '';
+  }
+
+  const urlArray = url
     .split(',')
-    .map(url => url.trim())
-    .filter(url => url !== '')
-    .uniq()
-    .filter(url => !store.playlist.some(item => item.url === url))
-    .map(url => ({ url, title: handle_url_to_title(url) }))
-    .value();
-  if (urls.length === 0) {
-    console.warn('WARN: Invalid or empty URLs provided for /audioimport command');
+    .map((url: string) => url.trim())
+    .filter((url: string) => url !== '')
+    .filter((url: string, index: number, self: string[]) => self.indexOf(url) === index);
+  if (urlArray.length === 0) {
+    console.warn('WARN: Invalid or empty URLs provided.');
     return '';
   }
 
-  store.playlist.push(...urls);
-  if (play) {
-    store.src = urls[0].url;
-    store.progress = 0;
-    store.playing = play;
+  if (!chat_metadata.variables) {
+    chat_metadata.variables = {};
   }
+
+  const typeKey = type === 'bgm' ? 'bgmurl' : 'ambienturl';
+  const existingUrls = chat_metadata.variables[typeKey] || [];
+  const mergedUrls = [...new Set([...urlArray, ...existingUrls])];
+
+  chat_metadata.variables[typeKey] = mergedUrls;
+  saveMetadataDebounced();
+
+  if (type === 'bgm') {
+    updateAudioSelect('bgm');
+  } else if (type === 'ambient') {
+    updateAudioSelect('ambient');
+  }
+
+  if (play === 'true' && urlArray[0]) {
+    const selectedUrl = urlArray[0];
+    if (type === 'bgm') {
+      saveSettingValue('audio.bgm_selected', selectedUrl);
+      await updateAudio('bgm', true);
+    } else if (type === 'ambient') {
+      saveSettingValue('audio.ambient_selected', selectedUrl);
+      await updateAudio('ambient', true);
+    }
+  }
+
   return '';
 }
 
-/** @deprecated 酒馆助手脚本已自带按钮，不再需要 /STScript */
-export function audioSelect(args: { type: string }, url: string): string {
+/**
+ * 오디오 선택 및 재생
+ */
+export async function audioSelect(args: { type: string }, url: string): Promise<void> {
+  const type = args.type.toLowerCase();
+
   if (!url) {
     console.warn('WARN: Missing URL for /audioselect command');
     return '';
   }
-  const type = args.type.toLowerCase() as 'bgm' | 'ambient';
-  const store = get_store_by_type(type);
-  if (!store.playlist.some(item => item.url === url)) {
-    store.playlist.push({ url, title: handle_url_to_title(url) });
+
+  if (!chat_metadata.variables) {
+    chat_metadata.variables = {};
   }
-  store.src = url;
-  store.progress = 0;
-  store.playing = true;
+
+  const playlist = type === 'bgm' ? list_BGMS : list_ambients;
+  const typeKey = type === 'bgm' ? 'bgmurl' : 'ambienturl';
+
+  if (playlist && playlist.includes(url)) {
+    if (type === 'bgm') {
+      saveSettingValue('audio.bgm_selected', url);
+      await updateAudio('bgm', true);
+    } else if (type === 'ambient') {
+      saveSettingValue('audio.ambient_selected', url);
+      await updateAudio('ambient', true);
+    }
+    return '';
+  }
+
+  const existingUrls = chat_metadata.variables[typeKey] || [];
+
+  const mergedUrls = [...new Set([url, ...existingUrls])];
+  chat_metadata.variables[typeKey] = mergedUrls;
+  saveMetadataDebounced();
+
+  if (type === 'bgm') {
+    updateAudioSelect('bgm');
+    saveSettingValue('audio.bgm_selected', url);
+    await updateAudio('bgm', true);
+  } else if (type === 'ambient') {
+    updateAudioSelect('ambient');
+    saveSettingValue('audio.ambient_selected', url);
+    await updateAudio('ambient', true);
+  }
+
   return '';
 }
 
-/** @deprecated 酒馆助手脚本已自带按钮，不再需要 /STScript */
-export function initSlashAudio() {
-  SlashCommandParser.addCommandObject(
-    SlashCommand.fromProps({
-      name: 'audioenable',
-      // @ts-expect-error 实际可用，仅用于兼容旧应用，因此不考虑怎么修复类型错误
-      callback: audioEnable,
-      namedArgumentList: [
-        SlashCommandNamedArgument.fromProps({
-          name: 'type',
-          description: '选择控制的播放器 (bgm 或 ambient)',
-          typeList: [ARGUMENT_TYPE.STRING],
-          enumList: [
-            new SlashCommandEnumValue('bgm', null, enumTypes.enum, enumIcons.file),
-            new SlashCommandEnumValue('ambient', null, enumTypes.enum, enumIcons.file),
-          ],
-          isRequired: true,
-        }),
-        new SlashCommandNamedArgument(
-          'state',
-          '打开或关闭播放器',
-          [ARGUMENT_TYPE.STRING],
-          false,
-          false,
-          'true',
-          commonEnumProviders.boolean('trueFalse')(),
-        ),
-      ],
-      helpString: `
-        <div>
-            控制音乐播放器或音效播放器的开启与关闭。
-        </div>
-        <div>
-            <strong>Example:</strong>
-            <ul>
-                <li>
-                    <pre><code>/audioenable type=bgm state=true</code></pre>
-                    打开音乐播放器。
-                </li>
-                <li>
-                    <pre><code>/audioenable type=ambient state=false</code></pre>
-                    关闭音效播放器。
-                </li>
-            </ul>
-        </div>
-    `,
-    }),
-  );
-
-  SlashCommandParser.addCommandObject(
-    SlashCommand.fromProps({
-      name: 'audioplay',
-      // @ts-expect-error 实际可用，仅用于兼容旧应用，因此不考虑怎么修复类型错误
-      callback: audioPlay,
-      namedArgumentList: [
-        SlashCommandNamedArgument.fromProps({
-          name: 'type',
-          description: '选择控制的播放器 (bgm 或 ambient)',
-          typeList: [ARGUMENT_TYPE.STRING],
-          enumList: [
-            new SlashCommandEnumValue('bgm', null, enumTypes.enum, enumIcons.file),
-            new SlashCommandEnumValue('ambient', null, enumTypes.enum, enumIcons.file),
-          ],
-          isRequired: true,
-        }),
-        new SlashCommandNamedArgument(
-          'play',
-          '播放或暂停',
-          [ARGUMENT_TYPE.STRING],
-          true,
-          false,
-          'true',
-          commonEnumProviders.boolean('trueFalse')(),
-        ),
-      ],
-      helpString: `
-        <div>
-            控制音乐播放器或音效播放器的播放与暂停。
-        </div>
-        <div>
-            <strong>Example:</strong>
-            <ul>
-                <li>
-                    <pre><code>/audioplay type=bgm</code></pre>
-                    播放当前音乐。
-                </li>
-                <li>
-                    <pre><code>/audioplay type=ambient play=false</code></pre>
-                    暂停当前音效。
-                </li>
-            </ul>
-        </div>
-      `,
-    }),
-  );
-
+/**
+ * 오디오 관련 슬래시 명령어 초기화
+ */
+export function initAudioSlashCommands() {
+  // audioselect 명령어 등록
   SlashCommandParser.addCommandObject(
     SlashCommand.fromProps({
       name: 'audioselect',
-      // @ts-expect-error 实际可用，仅用于兼容旧应用，因此不考虑怎么修复类型错误
       callback: audioSelect,
       namedArgumentList: [
         SlashCommandNamedArgument.fromProps({
           name: 'type',
-          description: '选择播放器类型 (bgm 或 ambient)',
+          description: '플레이어 타입 선택 (bgm 또는 ambient)',
           typeList: [ARGUMENT_TYPE.STRING],
           enumList: [
             new SlashCommandEnumValue('bgm', null, enumTypes.enum, enumIcons.file),
@@ -215,18 +252,18 @@ export function initSlashAudio() {
       unnamedArgumentList: [new SlashCommandArgument('url', [ARGUMENT_TYPE.STRING], true)],
       helpString: `
         <div>
-            选择并播放音频。如果音频链接不存在，则先导入再播放。
+            오디오를 선택하고 재생합니다. 오디오 링크가 존재하지 않으면 먼저 가져온 후 재생합니다.
         </div>
         <div>
             <strong>Example:</strong>
             <ul>
                 <li>
                     <pre><code>/audioselect type=bgm https://example.com/song.mp3</code></pre>
-                    选择并播放指定的音乐。
+                    지정된 음악을 선택하여 재생합니다.
                 </li>
                 <li>
                     <pre><code>/audioselect type=ambient https://example.com/sound.mp3</code></pre>
-                    选择并播放指定的音效。
+                    지정된 음향 효과를 선택하여 재생합니다.
                 </li>
             </ul>
         </div>
@@ -234,15 +271,15 @@ export function initSlashAudio() {
     }),
   );
 
+  // audioimport 명령어 등록
   SlashCommandParser.addCommandObject(
     SlashCommand.fromProps({
       name: 'audioimport',
-      // @ts-expect-error 实际可用，仅用于兼容旧应用，因此不考虑怎么修复类型错误
       callback: audioImport,
       namedArgumentList: [
         SlashCommandNamedArgument.fromProps({
           name: 'type',
-          description: '选择导入类型 (bgm 或 ambient)',
+          description: '가져오기 타입 선택 (bgm 또는 ambient)',
           typeList: [ARGUMENT_TYPE.STRING],
           enumList: [
             new SlashCommandEnumValue('bgm', null, enumTypes.enum, enumIcons.file),
@@ -252,7 +289,7 @@ export function initSlashAudio() {
         }),
         SlashCommandNamedArgument.fromProps({
           name: 'play',
-          description: '导入后是否立即播放第一个链接',
+          description: '가져온 후 첫 번째 링크 즉시 재생 여부',
           typeList: [ARGUMENT_TYPE.BOOLEAN],
           defaultValue: 'true',
           isRequired: false,
@@ -261,18 +298,18 @@ export function initSlashAudio() {
       unnamedArgumentList: [new SlashCommandArgument('url', [ARGUMENT_TYPE.STRING], true)],
       helpString: `
         <div>
-            导入音频或音乐链接，并决定是否立即播放，默认为自动播放。可批量导入链接，使用英文逗号分隔。
+            오디오 또는 음악 링크를 가져오고 즉시 재생할지 여부를 결정합니다. 기본적으로 자동 재생됩니다. 링크를 일괄적으로 가져올 수 있으며, 영어 쉼표를 사용하여 구분합니다.
         </div>
         <div>
             <strong>Example:</strong>
             <ul>
                 <li>
                     <pre><code>/audioimport type=bgm https://example.com/song1.mp3,https://example.com/song2.mp3</code></pre>
-                    导入 BGM 音乐并立即播放第一个链接。
+                    BGM 음악을 가져오고 첫 번째 링크를 즉시 재생합니다.
                 </li>
                 <li>
                     <pre><code>/audioimport type=ambient play=false url=https://example.com/sound1.mp3,https://example.com/sound2.mp3 </code></pre>
-                    导入音效链接 (不自动播放)。
+                    음향 효과 링크를 가져옵니다 (자동 재생 안 함).
                 </li>
             </ul>
         </div>
@@ -280,6 +317,101 @@ export function initSlashAudio() {
     }),
   );
 
+  // audioplay 명령어 등록
+  SlashCommandParser.addCommandObject(
+    SlashCommand.fromProps({
+      name: 'audioplay',
+      callback: audioPlay,
+      namedArgumentList: [
+        SlashCommandNamedArgument.fromProps({
+          name: 'type',
+          description: '제어할 플레이어 선택 (bgm 또는 ambient)',
+          typeList: [ARGUMENT_TYPE.STRING],
+          enumList: [
+            new SlashCommandEnumValue('bgm', null, enumTypes.enum, enumIcons.file),
+            new SlashCommandEnumValue('ambient', null, enumTypes.enum, enumIcons.file),
+          ],
+          isRequired: true,
+        }),
+        new SlashCommandNamedArgument(
+          'play',
+          '재생 또는 일시 정지',
+          [ARGUMENT_TYPE.STRING],
+          true,
+          false,
+          'true',
+          commonEnumProviders.boolean('trueFalse')(),
+        ),
+      ],
+      helpString: `
+        <div>
+            음악 플레이어 또는 음향 효과 플레이어의 재생과 일시 정지를 제어합니다.
+        </div>
+        <div>
+            <strong>Example:</strong>
+            <ul>
+                <li>
+                    <pre><code>/audioplay type=bgm</code></pre>
+                    현재 음악을 재생합니다.
+                </li>
+                <li>
+                    <pre><code>/audioplay type=ambient play=false</code></pre>
+                    현재 음향 효과를 일시 정지합니다.
+                </li>
+            </ul>
+        </div>
+      `,
+    }),
+  );
+
+  // audioenable 명령어 등록
+  SlashCommandParser.addCommandObject(
+    SlashCommand.fromProps({
+      name: 'audioenable',
+      callback: audioEnable,
+      namedArgumentList: [
+        SlashCommandNamedArgument.fromProps({
+          name: 'type',
+          description: '제어할 플레이어 선택 (bgm 또는 ambient)',
+          typeList: [ARGUMENT_TYPE.STRING],
+          enumList: [
+            new SlashCommandEnumValue('bgm', null, enumTypes.enum, enumIcons.file),
+            new SlashCommandEnumValue('ambient', null, enumTypes.enum, enumIcons.file),
+          ],
+          isRequired: true,
+        }),
+        new SlashCommandNamedArgument(
+          'state',
+          '플레이어 켜기 또는 끄기',
+          [ARGUMENT_TYPE.STRING],
+          false,
+          false,
+          'true',
+          commonEnumProviders.boolean('trueFalse')(),
+        ),
+      ],
+      helpString: `
+        <div>
+            음악 플레이어 또는 음향 효과 플레이어의 켜고 끄기를 제어합니다.
+        </div>
+        <div>
+            <strong>Example:</strong>
+            <ul>
+                <li>
+                    <pre><code>/audioenable type=bgm state=true</code></pre>
+                    음악 플레이어를 켭니다.
+                </li>
+                <li>
+                    <pre><code>/audioenable type=ambient state=false</code></pre>
+                    음향 효과 플레이어를 끕니다.
+                </li>
+            </ul>
+        </div>
+    `,
+    }),
+  );
+
+  // audiomode 명령어 등록
   SlashCommandParser.addCommandObject(
     SlashCommand.fromProps({
       name: 'audiomode',
@@ -287,7 +419,7 @@ export function initSlashAudio() {
       namedArgumentList: [
         SlashCommandNamedArgument.fromProps({
           name: 'type',
-          description: '选择控制的播放器 (bgm 或 ambient)',
+          description: '제어할 플레이어 선택 (bgm 또는 ambient)',
           typeList: [ARGUMENT_TYPE.STRING],
           enumList: [
             new SlashCommandEnumValue('bgm', null, enumTypes.enum, enumIcons.file),
@@ -297,39 +429,39 @@ export function initSlashAudio() {
         }),
         SlashCommandNamedArgument.fromProps({
           name: 'mode',
-          description: '选择播放模式',
+          description: '재생 모드 선택',
           typeList: [ARGUMENT_TYPE.STRING],
           enumList: [
-            new SlashCommandEnumValue('repeat', null, enumTypes.enum),
-            new SlashCommandEnumValue('random', null, enumTypes.enum),
-            new SlashCommandEnumValue('single', null, enumTypes.enum),
-            new SlashCommandEnumValue('stop', null, enumTypes.enum),
+            new SlashCommandEnumValue('repeat', null, enumTypes.enum, enumIcons.loop),
+            new SlashCommandEnumValue('random', null, enumTypes.enum, enumIcons.shuffle),
+            new SlashCommandEnumValue('single', null, enumTypes.enum, enumIcons.redo),
+            new SlashCommandEnumValue('stop', null, enumTypes.enum, enumIcons.stop),
           ],
           isRequired: true,
         }),
       ],
       helpString: `
         <div>
-            设置音频播放模式。
+            오디오 재생 모드를 설정합니다.
         </div>
         <div>
             <strong>Example:</strong>
             <ul>
                 <li>
                     <pre><code>/audiomode type=bgm mode=repeat</code></pre>
-                    设置音乐为循环播放模式。
+                    음악을 반복 재생 모드로 설정합니다.
                 </li>
                 <li>
                     <pre><code>/audiomode type=ambient mode=random</code></pre>
-                    设置音效为随机播放模式。
+                    음향 효과를 랜덤 재생 모드로 설정합니다.
                 </li>
                 <li>
                     <pre><code>/audiomode type=bgm mode=single</code></pre>
-                    设置音乐为单曲循环模式。
+                    음악을 한 곡 반복 재생 모드로 설정합니다.
                 </li>
                 <li>
                     <pre><code>/audiomode type=ambient mode=stop</code></pre>
-                    设置音效为停止播放模式。
+                    음향 효과를 정지 모드로 설정합니다.
                 </li>
             </ul>
         </div>
