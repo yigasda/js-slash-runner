@@ -1,1 +1,64 @@
-
+<div class="extension-content-item">
+  <div class="flex flexFlowColumn">
+    <div class="settings-title-text">렌더러 활성화</div>
+    <div class="settings-title-description">활성화하면 조건에 맞는 코드 블록이 렌더링됩니다</div>
+  </div>
+  <div class="toggle-switch">
+    <input type="checkbox" id="render-enable-toggle" class="toggle-input" checked />
+    <label for="render-enable-toggle" class="toggle-label">
+      <span class="toggle-handle"></span>
+    </label>
+  </div>
+</div>
+<div class="divider"></div>
+<div class="extension-content-item">
+  <div class="flex flexFlowColumn">
+    <div class="settings-title-text">렌더링 최적화 활성화</div>
+    <div class="settings-title-description">코드 하이라이트를 취소하여 렌더링 속도 향상</div>
+  </div>
+  <div class="toggle-switch">
+    <input type="checkbox" id="render-optimize-toggle" class="toggle-input" checked />
+    <label for="render-optimize-toggle" class="toggle-label">
+      <span class="toggle-handle"></span>
+    </label>
+  </div>
+</div>
+<div class="divider"></div>
+<div class="extension-content-item">
+  <div class="flex flexFlowColumn">
+    <div class="settings-title-text">코드 접기 활성화</div>
+    <div class="settings-title-description">모든 코드 블록을 접어서 정규식 교체로 프런트엔드 코드가 될 때 읽기에 방해되지 않도록 합니다</div>
+  </div>
+  <div class="toggle-switch">
+    <input type="checkbox" id="render-hide-style-toggle" class="toggle-input" checked />
+    <label for="render-hide-style-toggle" class="toggle-label">
+      <span class="toggle-handle"></span>
+    </label>
+  </div>
+</div>
+<div class="divider"></div>
+<div class="extension-content-item">
+  <div class="flex flexFlowColumn">
+    <div class="settings-title-text">렌더링 깊이</div>
+    <div class="settings-title-description">렌더링할 층수를 설정합니다. 최신 층부터 계산됩니다. 0일 때 모든 층을 렌더링합니다</div>
+  </div>
+  <div class="input-number-wrapper">
+    <input type="number" id="render-depth" class="input-number" min="0" value="0" />
+  </div>
+</div>
+<div class="divider"></div>
+<div class="extension-content-item">
+  <div class="flex flexFlowColumn">
+    <div class="settings-title-text">Tampermonkey 호환 모드 활성화</div>
+    <div class="settings-title-description">
+      활성화하면 <a href="https://www.tampermonkey.net/documentation.html" target="_blank">Tampermonkey Tavern HTML 주입 스크립트</a>
+      기능을 지원합니다
+    </div>
+  </div>
+  <div class="toggle-switch">
+    <input type="checkbox" id="tampermonkey-compatibility-toggle" class="toggle-input" checked />
+    <label for="tampermonkey-compatibility-toggle" class="toggle-label">
+      <span class="toggle-handle"></span>
+    </label>
+  </div>
+</div>
