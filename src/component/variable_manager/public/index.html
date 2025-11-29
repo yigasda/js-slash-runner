@@ -1,1 +1,82 @@
+<div id="variable-manager-container">
+  <div class="variable-nav-container">
+    <div id="global-tab" class="tab-item active"><div class="tab-item-text">전역</div></div>
+    <div id="character-tab" class="tab-item"><div class="tab-item-text">캐릭터</div></div>
+    <div id="chat-tab" class="tab-item"><div class="tab-item-text">채팅</div></div>
+    <div id="message-tab" class="tab-item"><div class="tab-item-text">메시지</div></div>
+  </div>
+  <div class="flex-container" style="margin: 1px; justify-content: space-between">
+    <div class="left-controls">
+      <div id="filter-icon" class="filter-icon" title="변수 유형 필터링">
+        <i class="fa-solid fa-filter"></i>
+      </div>
+      <div class="search-container">
+        <input type="text" id="variable-search" class="variable-search" placeholder="변수 검색..." />
+      </div>
+    </div>
+    <div class="right-controls">
+      <div id="add-variable" class="menu_button_icon menu_button interactable">
+        <i class="fa-solid fa-plus"></i>
+        <span>새로 만들기</span>
+      </div>
+      <div id="clear-all" class="menu_button_icon menu_button interactable">
+        <i class="fa-solid fa-trash"></i>
+        <span>모두 지우기</span>
+      </div>
+    </div>
+  </div>
+  <div id="filter-options" class="filter-options" style="display: none">
+    <div class="filter-option">
+      <input type="checkbox" id="filter-string" class="filter-checkbox" data-type="string" checked />
+      <label for="filter-string">문자열</label>
+    </div>
+    <div class="filter-option">
+      <input type="checkbox" id="filter-object" class="filter-checkbox" data-type="object" checked />
+      <label for="filter-object">객체</label>
+    </div>
+    <div class="filter-option">
+      <input type="checkbox" id="filter-array" class="filter-checkbox" data-type="array" checked />
+      <label for="filter-array">배열</label>
+    </div>
+    <div class="filter-option">
+      <input type="checkbox" id="filter-number" class="filter-checkbox" data-type="number" checked />
+      <label for="filter-number">숫자</label>
+    </div>
+    <div class="filter-option">
+      <input type="checkbox" id="filter-boolean" class="filter-checkbox" data-type="boolean" checked />
+      <label for="filter-boolean">부울 값</label>
+    </div>
+  </div>
 
+  <div id="floor-filter-container" class="floor-filter-container" style="display: none">
+    <div class="floor-filter-content">
+      <div class="floor-range-inputs">
+        <div class="floor-input-group">
+          <input type="number" id="floor-min" class="floor-input" min="0" placeholder="최소" />번째
+          <span class="floor-separator">~</span>
+          <input type="number" id="floor-max" class="floor-input" min="0" placeholder="최대" />번째
+        </div>
+        <button id="floor-filter-btn" class="floor-filter-btn">
+          <i class="fa-solid fa-check"></i>
+          <span>확인</span>
+        </button>
+      </div>
+      <div id="floor-filter-error" class="floor-filter-error" style="display: none">최대 번호는 최소 번호보다 작을 수 없습니다</div>
+    </div>
+  </div>
+
+  <div class="tab-content-container">
+    <div id="global-content" class="tab-content active">
+      <div class="variable-list"></div>
+    </div>
+    <div id="character-content" class="tab-content">
+      <div class="variable-list"></div>
+    </div>
+    <div id="chat-content" class="tab-content">
+      <div class="variable-list"></div>
+    </div>
+    <div id="message-content" class="tab-content">
+      <div class="variable-list"></div>
+    </div>
+  </div>
+</div>
